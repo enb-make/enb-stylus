@@ -27,10 +27,11 @@ module.exports = require('enb/techs/css').buildFlow()
     .builder(function (sourceFiles) {
         var _this = this;
         var promise = Vow.promise();
+        var comments = this.getOption('comments', true);
 
         var css = sourceFiles.map(function (file) {
             var path = file.fullname;
-            if (file.name.indexOf('.styl') !== -1) {
+            if (file.name.indexOf('.styl') !== -1 && comments) {
                 return '/* ' + path + ':begin */\n' +
                     '@import "' + path + '";\n' +
                     '/* ' + path + ':end */\n';
