@@ -29,7 +29,7 @@ module.exports = require('enb/techs/css').buildFlow()
         var promise = Vow.promise();
 
         var css = sourceFiles.map(function (file) {
-            var path = file.fullname;
+            var path = file.fullname.replace(/\\/g, "/");
             if (file.name.indexOf('.styl') !== -1) {
                 return '/* ' + path + ':begin */\n' +
                     '@import "' + path + '";\n' +
