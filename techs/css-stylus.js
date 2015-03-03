@@ -17,10 +17,13 @@
  * nodeConfig.addTech(require('enb-stylus/techs/css-stylus'));
  * ```
  */
-var vow = require('vow');
-var stylus = require('stylus');
+var path = require('path'),
+    vow = require('vow'),
+    postcss = require('postcss'),
+    atImport = require('postcss-import'),
+    stylus = require('stylus');
 
-module.exports = require('enb/techs/css').buildFlow()
+module.exports = require('enb/lib/build-flow').create()
     .name('css-stylus')
     .target('target', '?.css')
     .defineOption('compress', false)
@@ -28,22 +31,24 @@ module.exports = require('enb/techs/css').buildFlow()
     .defineOption('variables')
     .useFileList(['css', 'styl'])
     .builder(function (sourceFiles) {
-        var _this = this;
-        var filename = this.node.resolvePath(this._target);
-        var defer = vow.defer();
+        var node = this.node,
+            filename = node.resolvePath(path.basename(this._target)),
+            defer = vow.defer(),
+            css, renderer;
 
-        var css = sourceFiles.map(function (file) {
-            var path = _this.node.relativePath(file.fullname);
+        css = sourceFiles.map(function (file) {
+            var url = node.relativePath(file.fullname);
+
             if (file.name.indexOf('.styl') !== -1) {
-                return '/* ' + path + ':begin */\n' +
-                    '@import "' + path + '";\n' +
-                    '/* ' + path + ':end */\n';
+                return '/* ' + url + ':begin */\n' +
+                    '@import "' + url + '";\n' +
+                    '/* ' + url + ':end */\n';
             } else {
-                return '@import "' + path + '";';
+                return '@import "' + url + '";';
             }
         }).join('\n');
 
-        var renderer = stylus(css, {
+        renderer = stylus(css, {
                 compress: this._compress,
                 prefix: this._prefix
             })
@@ -53,6 +58,7 @@ module.exports = require('enb/techs/css').buildFlow()
 
         if (this._variables) {
             var variables = this._variables;
+
             Object.keys(variables).forEach(function (key) {
                 renderer.define(key, variables[key]);
             });
@@ -69,7 +75,21 @@ module.exports = require('enb/techs/css').buildFlow()
 
         return defer.promise()
             .then(function (css) {
-                return _this._processIncludes(css, _this.node.resolvePath(_this.targetName));
+                return postcss()
+                    .use(atImport({
+                        transform: function (content, filename) {
+                            var url = node.relativePath(filename),
+                                pre = '/* ' + url + ': begin */ /**/\n',
+                                post = '/* ' + url + ': end */ /**/\n',
+                                res = pre + content + post;
+
+                            return res.replace(/\n/g, '\n    ');
+                        }
+                    }))
+                    .process(css, {
+                        from: filename
+                    })
+                    .css;
             });
     })
     .methods({
