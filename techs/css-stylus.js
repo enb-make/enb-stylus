@@ -7,6 +7,7 @@
  * **Опции**
  *
  * * *String* **target** — Результирующий таргет. По умолчанию `?.css`.
+ * * *Array<String>* **sourceSuffixes** — Суффиксы файлов, из которых собирается таргет. По умолчанию — `['css', 'styl']`.
  * * *Object* **variables** — Дополнительные переменные окружения для `stylus`.
  * * *String* **filesTarget** — files-таргет, на основе которого получается список исходных файлов
  *   (его предоставляет технология `files`). По умолчанию — `?.files`.
@@ -29,14 +30,17 @@ module.exports = require('enb/lib/build-flow').create()
     .defineOption('compress', false)
     .defineOption('prefix', '')
     .defineOption('variables')
-    .useFileList(['css', 'styl'])
+    .defineOption('sourceSuffixes', ['css', 'styl'])
+    .useSourceResult('filesTarget', '?.files')
     .builder(function (sourceFiles) {
         var node = this.node,
             filename = node.resolvePath(path.basename(this._target)),
             defer = vow.defer(),
             css, renderer;
 
-        css = sourceFiles.map(function (file) {
+        css = sourceFiles.items.filter(function (item) {
+            return this._sourceSuffixes.indexOf(item.suffix) > -1;
+        }, this).map(function (file) {
             var url = node.relativePath(file.fullname);
 
             if (file.name.indexOf('.styl') !== -1) {
