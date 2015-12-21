@@ -121,8 +121,8 @@ module.exports = buildFlow.create()
     })
     .builder(function (sourceFiles) {
         var node = this.node,
-            filename = node.resolvePath(path.basename(this._target)),
-            stylesImports = this._prepareImports(sourceFiles);
+            filename = path.resolve(node.getPath(), this._target),
+            stylesImports = this._prepareImports(sourceFiles, path.dirname(filename));
 
         return this._processStylus(filename, stylesImports)
             .spread(function (css, sourcemap) {
@@ -203,14 +203,13 @@ module.exports = buildFlow.create()
          * Returns CSS code with imports to specified files.
          *
          * @param {FileList} sourceFiles — Objects with paths to the files that contain styles for processing.
+         * @param {string} relativeDir — String with path to the directory imports must be composed relative to.
          * @see [FileList]{@link https://github.com/enb-make/enb/blob/master/lib/file-list.js}
          * @returns {String}
          */
-        _composeImports: function (sourceFiles) {
-            var node = this.node;
-
+        _composeImports: function (sourceFiles, relativeDir) {
             return sourceFiles.map(function (file) {
-                var url = node.relativePath(file.fullname),
+                var url = path.relative(relativeDir, file.fullname),
                     pre = '',
                     post = '';
 
@@ -228,16 +227,17 @@ module.exports = buildFlow.create()
          *
          * @private
          * @param {FileList} sourceFiles — Objects with paths to the files that contain styles for processing.
+         * @param {string} relativeDir — String with path to the directory imports must be composed relative to.
          * @see [FileList]{@link https://github.com/enb-make/enb/blob/master/lib/file-list.js}
          * @returns {String} – list of @import
          */
-        _prepareImports: function (sourceFiles) {
+        _prepareImports: function (sourceFiles, relativeDir) {
             return this._composeImports([].concat(
                 // add global files to the top
                 this._globalFiles,
                 // add source files after global files
                 this._filterSourceFiles(sourceFiles)
-            ));
+            ), relativeDir);
         },
 
         /**
