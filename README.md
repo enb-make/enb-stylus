@@ -71,7 +71,8 @@ module.exports = function(config) {
             // sourceSuffixes: ['.styl', '.css'],
             // url: 'rebase'
             // imports: 'include',
-            // comments: true
+            // comments: true,
+            // plugins: []
         }]);
         node.addTarget('?.css');
     });

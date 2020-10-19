@@ -91,6 +91,7 @@ var path = require('path'),
 module.exports = buildFlow.create()
     .name('stylus')
     .target('target', '?.css')
+    .defineOption('plugins', [])
     .defineOption('url', 'rebase')
     .defineOption('inlineMaxSize', 14)
     .defineOption('comments', true)
@@ -321,7 +322,7 @@ module.exports = buildFlow.create()
          */
         _processCss: function (filename, css, sourcemap) {
             var postcss = require('postcss'),
-                postcssPlugins = [],
+                postcssPlugins = this._plugins,
                 urlMethod = this._url,
 
                 // base opts to resolve urls
